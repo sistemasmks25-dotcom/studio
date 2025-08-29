@@ -116,7 +116,7 @@ export async function deactivateUser(id: string) {
 export async function getDepartments(): Promise<Department[]> {
   const db = await dbPromise;
   return db.all(
-    "SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.id = u.departmentId AND u.status = 'Active' GROUP BY d.id, d.name ORDER BY d.name"
+    "SELECT d.id, d.name, (SELECT COUNT(*) FROM users u WHERE u.departmentId = d.id AND u.status = 'Active') as memberCount FROM departments d ORDER BY d.name"
   );
 }
 
