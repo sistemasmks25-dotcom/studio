@@ -69,13 +69,54 @@ export async function savePassword(
 
 export async function getUsers(): Promise<User[]> {
   const db = await dbPromise;
-  return db.all('SELECT * FROM users');
+  return db.all('SELECT * FROM users ORDER BY name');
 }
+
+export async function saveUser(
+  user: Omit<User, 'id' | 'lastLogin' | 'status'> & { id?: string }
+) {
+    const db = await dbPromise;
+    const { id, name, email, role, department } = user;
+
+    try {
+        if (id) {
+            await db.run(
+                'UPDATE users SET name = ?, role = ?, department = ? WHERE id = ?',
+                name, role, department, id
+            );
+        } else {
+            const existingUser = await db.get('SELECT id FROM users WHERE email = ?', email);
+            if(existingUser) {
+                return { error: 'A user with this email already exists.' };
+            }
+            await db.run(
+                'INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                randomUUID(), name, email, role, department, new Date().toISOString(), 'Active'
+            );
+        }
+        return { success: true };
+    } catch (error) {
+        console.error('Error saving user:', error);
+        return { error: 'Failed to save user.' };
+    }
+}
+
+export async function deactivateUser(id: string) {
+    const db = await dbPromise;
+    try {
+        await db.run("UPDATE users SET status = 'Inactive' WHERE id = ?", id);
+        return { success: true };
+    } catch (error) {
+        console.error('Error deactivating user:', error);
+        return { error: 'Failed to deactivate user.' };
+    }
+}
+
 
 export async function getDepartments(): Promise<Department[]> {
   const db = await dbPromise;
   return db.all(
-    'SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.name = u.department GROUP BY d.id, d.name'
+    "SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.name = u.department AND u.status = 'Active' GROUP BY d.id, d.name ORDER BY d.name"
   );
 }
 

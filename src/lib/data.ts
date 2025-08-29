@@ -16,6 +16,7 @@ export interface User {
   role: 'Admin' | 'User';
   department: string;
   lastLogin: string;
+  status: 'Active' | 'Inactive';
 }
 
 export interface Department {

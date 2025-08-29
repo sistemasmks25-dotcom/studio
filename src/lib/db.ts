@@ -25,7 +25,8 @@ async function setup() {
         email TEXT NOT NULL UNIQUE,
         role TEXT NOT NULL,
         department TEXT,
-        lastLogin TEXT NOT NULL
+        lastLogin TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Active'
     );
 
     CREATE TABLE IF NOT EXISTS departments (
@@ -43,9 +44,9 @@ async function setup() {
 
   const users = await db.get('SELECT COUNT(*) as count FROM users');
     if (users.count === 0) {
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin) VALUES (?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'Admin', 'Management', '2024-07-30T10:00:00Z');
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin) VALUES (?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'User', 'Engineering', '2024-07-30T12:30:00Z');
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin) VALUES (?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'User', 'Marketing', '2024-07-29T15:00:00Z');
+    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'Admin', 'Management', '2024-07-30T10:00:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'User', 'Engineering', '2024-07-30T12:30:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'User', 'Marketing', '2024-07-29T15:00:00Z', 'Active');
   }
 
   const departments = await db.get('SELECT COUNT(*) as count FROM departments');
