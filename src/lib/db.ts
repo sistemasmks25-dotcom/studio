@@ -24,9 +24,10 @@ async function setup() {
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         role TEXT NOT NULL,
-        department TEXT,
+        departmentId TEXT,
         lastLogin TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'Active'
+        status TEXT NOT NULL DEFAULT 'Active',
+        FOREIGN KEY (departmentId) REFERENCES departments(id)
     );
 
     CREATE TABLE IF NOT EXISTS departments (
@@ -34,6 +35,14 @@ async function setup() {
         name TEXT NOT NULL UNIQUE
     );
   `);
+
+  const departments = await db.get('SELECT COUNT(*) as count FROM departments');
+  if (departments.count === 0) {
+    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '1', 'Engineering');
+    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '2', 'Marketing');
+    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '3', 'Management');
+    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '4', 'Human Resources');
+  }
 
   const passwords = await db.get('SELECT COUNT(*) as count FROM passwords');
   if (passwords.count === 0) {
@@ -43,18 +52,10 @@ async function setup() {
   }
 
   const users = await db.get('SELECT COUNT(*) as count FROM users');
-    if (users.count === 0) {
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'Admin', 'Management', '2024-07-30T10:00:00Z', 'Active');
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'User', 'Engineering', '2024-07-30T12:30:00Z', 'Active');
-    await db.run("INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'User', 'Marketing', '2024-07-29T15:00:00Z', 'Active');
-  }
-
-  const departments = await db.get('SELECT COUNT(*) as count FROM departments');
-  if (departments.count === 0) {
-    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '1', 'Engineering');
-    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '2', 'Marketing');
-    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '3', 'Management');
-    await db.run("INSERT INTO departments (id, name) VALUES (?, ?)", '4', 'Human Resources');
+  if (users.count === 0) {
+    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'Admin', '3', '2024-07-30T10:00:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'User', '1', '2024-07-30T12:30:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'User', '2', '2024-07-29T15:00:00Z', 'Active');
   }
   
   return db;

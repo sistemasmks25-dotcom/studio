@@ -69,20 +69,20 @@ export async function savePassword(
 
 export async function getUsers(): Promise<User[]> {
   const db = await dbPromise;
-  return db.all('SELECT * FROM users ORDER BY name');
+  return db.all("SELECT u.*, d.name as department FROM users u JOIN departments d ON u.departmentId = d.id ORDER BY u.name");
 }
 
 export async function saveUser(
-  user: Omit<User, 'id' | 'lastLogin' | 'status'> & { id?: string }
+  user: Omit<User, 'id' | 'lastLogin' | 'status' | 'department'> & { id?: string }
 ) {
     const db = await dbPromise;
-    const { id, name, email, role, department } = user;
+    const { id, name, email, role, departmentId } = user;
 
     try {
         if (id) {
             await db.run(
-                'UPDATE users SET name = ?, role = ?, department = ? WHERE id = ?',
-                name, role, department, id
+                'UPDATE users SET name = ?, role = ?, departmentId = ? WHERE id = ?',
+                name, role, departmentId, id
             );
         } else {
             const existingUser = await db.get('SELECT id FROM users WHERE email = ?', email);
@@ -90,8 +90,8 @@ export async function saveUser(
                 return { error: 'A user with this email already exists.' };
             }
             await db.run(
-                'INSERT INTO users (id, name, email, role, department, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                randomUUID(), name, email, role, department, new Date().toISOString(), 'Active'
+                'INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                randomUUID(), name, email, role, departmentId, new Date().toISOString(), 'Active'
             );
         }
         return { success: true };
@@ -116,7 +116,7 @@ export async function deactivateUser(id: string) {
 export async function getDepartments(): Promise<Department[]> {
   const db = await dbPromise;
   return db.all(
-    "SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.name = u.department AND u.status = 'Active' GROUP BY d.id, d.name ORDER BY d.name"
+    "SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.id = u.departmentId AND u.status = 'Active' GROUP BY d.id, d.name ORDER BY d.name"
   );
 }
 
@@ -149,7 +149,7 @@ export async function deleteDepartment(id: string) {
   const db = await dbPromise;
   try {
     // Optional: Check if department is empty before deleting
-    const users = await db.get('SELECT COUNT(*) as count FROM users WHERE department = (SELECT name FROM departments WHERE id = ?)', id);
+    const users = await db.get('SELECT COUNT(*) as count FROM users WHERE departmentId = ?', id);
     if (users.count > 0) {
         return { error: 'Cannot delete department with assigned users.' };
     }

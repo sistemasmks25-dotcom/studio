@@ -14,7 +14,8 @@ export interface User {
   name: string;
   email: string;
   role: 'Admin' | 'User';
-  department: string;
+  department: string; // The name of the department
+  departmentId: string;
   lastLogin: string;
   status: 'Active' | 'Inactive';
 }

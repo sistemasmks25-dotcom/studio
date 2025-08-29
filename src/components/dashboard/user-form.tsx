@@ -29,7 +29,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Please enter a valid email"),
   role: z.enum(["Admin", "User"]),
-  department: z.string().min(1, "Department is required"),
+  departmentId: z.string().min(1, "Department is required"),
 });
 
 type UserFormProps = {
@@ -52,7 +52,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
       name: user?.name || "",
       email: user?.email || "",
       role: user?.role || "User",
-      department: user?.department || "",
+      departmentId: user?.departmentId || "",
     },
   });
 
@@ -109,7 +109,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
               <FormMessage />
             </FormItem>
           )} />
-          <FormField name="department" control={form.control} render={({ field }) => (
+          <FormField name="departmentId" control={form.control} render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -118,7 +118,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                 </FormControl>
                 <SelectContent>
                   {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
