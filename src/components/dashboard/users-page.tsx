@@ -7,10 +7,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { mockUsers } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/data";
+import { getUsers } from "@/lib/actions";
 
 export function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    getUsers().then(setUsers);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -38,7 +46,7 @@ export function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((u) => (
+              {users.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium flex items-center gap-3">
                     <Avatar>

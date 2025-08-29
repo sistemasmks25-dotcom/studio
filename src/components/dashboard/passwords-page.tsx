@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlusCircle, MoreHorizontal, Copy, Edit, Trash2, KeyRound, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,17 +25,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { mockPasswords } from "@/lib/data";
 import type { Password } from "@/lib/data";
 import { PasswordForm } from "./password-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getPasswords } from "@/lib/actions";
 
 export function PasswordsPage() {
-  const [passwords, setPasswords] = useState<Password[]>(mockPasswords);
+  const [passwords, setPasswords] = useState<Password[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPassword, setSelectedPassword] = useState<Password | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    getPasswords().then(setPasswords);
+  }, []);
 
   const handleEdit = (password: Password) => {
     setSelectedPassword(password);

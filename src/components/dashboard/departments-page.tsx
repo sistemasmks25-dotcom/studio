@@ -5,9 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { mockDepartments } from "@/lib/data";
+import { useEffect, useState } from "react";
+import type { Department } from "@/lib/data";
+import { getDepartments } from "@/lib/actions";
 
 export function DepartmentsPage() {
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    getDepartments().then(setDepartments);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -33,7 +41,7 @@ export function DepartmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockDepartments.map((d) => (
+              {departments.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell className="font-medium flex items-center gap-2">
                     <Building className="h-4 w-4 text-muted-foreground" />
