@@ -26,7 +26,7 @@ export async function getPasswords(): Promise<Password[]> {
 }
 
 export async function savePassword(
-  password: Omit<Password, 'id'> & { id?: string }
+  password: Omit<Password, 'id' | 'usageFrequency'> & { id?: string }
 ) {
   const db = await dbPromise;
   const { id, name, username, passwordValue, url, notes, folder, expiryDate } =
@@ -77,4 +77,45 @@ export async function getDepartments(): Promise<Department[]> {
   return db.all(
     'SELECT d.id, d.name, count(u.id) as memberCount FROM departments d LEFT JOIN users u ON d.name = u.department GROUP BY d.id, d.name'
   );
+}
+
+export async function saveDepartment(
+  department: Omit<Department, 'memberCount'> & { id?: string }
+) {
+  const db = await dbPromise;
+  const { id, name } = department;
+
+  try {
+    if (id) {
+      // Update existing department
+      await db.run('UPDATE departments SET name = ? WHERE id = ?', name, id);
+    } else {
+      // Insert new department
+      await db.run(
+        'INSERT INTO departments (id, name) VALUES (?, ?)',
+        randomUUID(),
+        name
+      );
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving department:', error);
+    return { error: 'Failed to save department.' };
+  }
+}
+
+export async function deleteDepartment(id: string) {
+  const db = await dbPromise;
+  try {
+    // Optional: Check if department is empty before deleting
+    const users = await db.get('SELECT COUNT(*) as count FROM users WHERE department = (SELECT name FROM departments WHERE id = ?)', id);
+    if (users.count > 0) {
+        return { error: 'Cannot delete department with assigned users.' };
+    }
+    await db.run('DELETE FROM departments WHERE id = ?', id);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting department:', error);
+    return { error: 'Failed to delete department.' };
+  }
 }
