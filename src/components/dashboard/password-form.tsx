@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Password } from "@/lib/data";
 import { PasswordGenerator } from "../password-generator";
-import { getPasswordExpirySuggestion } from "@/lib/actions";
+import { getPasswordExpirySuggestion, savePassword } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -49,7 +49,8 @@ type PasswordFormProps = {
 };
 
 export function PasswordForm({ password, onFormSubmit }: PasswordFormProps) {
-  const [isPending, startTransition] = useTransition();
+  const [isAISuggestionPending, startAISuggestionTransition] = useTransition();
+  const [isSavePending, startSaveTransition] = useTransition();
   const [suggestion, setSuggestion] = useState<{ expiryDate: string; reason: string } | null>(null);
   const { toast } = useToast();
 
@@ -73,7 +74,7 @@ export function PasswordForm({ password, onFormSubmit }: PasswordFormProps) {
   useEffect(() => {
     if (passwordValue && passwordValue.length > 5) {
       const handler = setTimeout(() => {
-        startTransition(async () => {
+        startAISuggestionTransition(async () => {
           setSuggestion(null);
           const result = await getPasswordExpirySuggestion({
             password: passwordValue,
@@ -93,9 +94,20 @@ export function PasswordForm({ password, onFormSubmit }: PasswordFormProps) {
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({ title: "Password Saved", description: "Your password has been saved successfully." });
-    onFormSubmit();
+    startSaveTransition(async () => {
+        const payload = {
+            ...values,
+            id: password?.id,
+            expiryDate: values.expiryDate ? format(values.expiryDate, 'yyyy-MM-dd') : undefined,
+        };
+        const result = await savePassword(payload);
+        if (result.success) {
+            toast({ title: "Password Saved", description: "Your password has been saved successfully." });
+            onFormSubmit();
+        } else {
+            toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
+        }
+    });
   }
   
   const applySuggestion = () => {
@@ -135,14 +147,14 @@ export function PasswordForm({ password, onFormSubmit }: PasswordFormProps) {
             )} />
         </div>
 
-        { (isPending || suggestion) &&
+        { (isAISuggestionPending || suggestion) &&
           <div className="p-3 rounded-md border bg-accent/10 border-accent/20">
             <div className="flex items-center gap-2 text-sm font-semibold text-accent mb-2">
               <Sparkles className="h-4 w-4 text-accent" />
               <span>AI Suggestion</span>
-              {isPending && <span className="text-xs font-normal animate-pulse">(analyzing...)</span>}
+              {isAISuggestionPending && <span className="text-xs font-normal animate-pulse">(analyzing...)</span>}
             </div>
-            {suggestion && !isPending && (
+            {suggestion && !isAISuggestionPending && (
                 <>
                     <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
                     <Button type="button" size="sm" variant="outline" className="mt-2" onClick={applySuggestion}>
@@ -157,7 +169,9 @@ export function PasswordForm({ password, onFormSubmit }: PasswordFormProps) {
           <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Any additional information..." {...field} /></FormControl><FormMessage /></FormItem>
         )} />
 
-        <Button type="submit" className="w-full">Save Password</Button>
+        <Button type="submit" className="w-full" disabled={isSavePending}>
+            {isSavePending ? 'Saving...' : 'Save Password'}
+        </Button>
       </form>
     </Form>
   );
