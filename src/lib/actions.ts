@@ -5,7 +5,7 @@ import {
   SuggestPasswordExpiryInput,
 } from '@/ai/flows/suggest-password-expiry';
 import { dbPromise } from '@/lib/db';
-import { Department, Password, User } from './data';
+import { Department, Password, User, PasswordChange } from './data';
 import { randomUUID } from 'crypto';
 
 export async function getPasswordExpirySuggestion(
@@ -69,7 +69,7 @@ export async function savePassword(
 
 export async function getUsers(): Promise<User[]> {
   const db = await dbPromise;
-  return db.all("SELECT u.*, d.name as department FROM users u JOIN departments d ON u.departmentId = d.id ORDER BY u.name");
+  return db.all("SELECT u.id, u.name, u.email, u.role, u.departmentId, u.lastLogin, u.status, d.name as department FROM users u JOIN departments d ON u.departmentId = d.id ORDER BY u.name");
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
@@ -79,7 +79,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 export async function saveUser(
-  user: Omit<User, 'id' | 'lastLogin' | 'status' | 'department'> & { id?: string }
+  user: Omit<User, 'id' | 'lastLogin' | 'status' | 'department' | 'password'> & { id?: string }
 ) {
     const db = await dbPromise;
     const { id, name, email, role, departmentId } = user;
@@ -96,8 +96,8 @@ export async function saveUser(
                 return { error: 'A user with this email already exists.' };
             }
             await db.run(
-                'INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                randomUUID(), name, email, role, departmentId, new Date().toISOString(), 'Active'
+                'INSERT INTO users (id, name, email, password, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                randomUUID(), name, email, 'password', role, departmentId, new Date().toISOString(), 'Active'
             );
         }
         return { success: true };
@@ -115,6 +115,25 @@ export async function updateUserProfile(id: string, name: string) {
     } catch (error) {
         console.error('Error updating profile:', error);
         return { error: 'Failed to update profile.' };
+    }
+}
+
+export async function changeUserPassword(id: string, passwords: PasswordChange) {
+    const db = await dbPromise;
+    try {
+        const user = await db.get<User>('SELECT * FROM users WHERE id = ?', id);
+        if (!user) {
+            return { error: 'User not found.' };
+        }
+        // NOTE: In a real app, passwords would be hashed.
+        if (user.password !== passwords.currentPassword) {
+            return { error: 'Incorrect current password.' };
+        }
+        await db.run('UPDATE users SET password = ? WHERE id = ?', passwords.newPassword, id);
+        return { success: true };
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return { error: 'Failed to change password.' };
     }
 }
 

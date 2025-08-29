@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useTransition, useState, useEffect } from "react";
 import type { User } from "@/lib/data";
-import { getUserByEmail, updateUserProfile } from "@/lib/actions";
+import { getUserByEmail, updateUserProfile, changeUserPassword } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -21,15 +21,35 @@ const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
 });
 
+const passwordFormSchema = z.object({
+    currentPassword: z.string().min(1, { message: "Current password is required." }),
+    newPassword: z.string().min(8, { message: "New password must be at least 8 characters." }),
+    confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmPassword"],
+});
+
+
 export function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isProfilePending, startProfileTransition] = useTransition();
+  const [isPasswordPending, startPasswordTransition] = useTransition();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof profileFormSchema>>({
+  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: "",
+    },
+  });
+  
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
     },
   });
 
@@ -39,14 +59,14 @@ export function SettingsPage() {
     getUserByEmail("admin@fortress.com").then(userData => {
       if (userData) {
         setUser(userData);
-        form.reset({ name: userData.name });
+        profileForm.reset({ name: userData.name });
       }
     });
-  }, [form]);
+  }, [profileForm]);
 
   function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
     if (!user) return;
-    startTransition(async () => {
+    startProfileTransition(async () => {
       const result = await updateUserProfile(user.id, values.name);
       if (result.success) {
         toast({
@@ -65,6 +85,30 @@ export function SettingsPage() {
       }
     });
   }
+
+  function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
+    if (!user) return;
+    startPasswordTransition(async () => {
+      const result = await changeUserPassword(user.id, {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      if (result.success) {
+        toast({
+          title: "Password Changed",
+          description: "Your password has been changed successfully.",
+        });
+        passwordForm.reset();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Change Failed",
+          description: result.error,
+        });
+      }
+    });
+  }
+
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -93,10 +137,10 @@ export function SettingsPage() {
               <Skeleton className="h-10 w-32" />
             </div>
           ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-4">
+            <Form {...profileForm}>
+              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                 <FormField
-                  control={form.control}
+                  control={profileForm.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
@@ -112,7 +156,7 @@ export function SettingsPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" defaultValue={user.email} disabled />
                 </div>
-                <Button type="submit" disabled={isPending}>{isPending ? 'Updating...' : 'Update Profile'}</Button>
+                <Button type="submit" disabled={isProfilePending}>{isProfilePending ? 'Updating...' : 'Update Profile'}</Button>
               </form>
             </Form>
           )}
@@ -124,20 +168,35 @@ export function SettingsPage() {
           <CardTitle>Password</CardTitle>
           <CardDescription>Change your master password.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input id="current-password" type="password" />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input id="new-password" type="password" />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input id="confirm-password" type="password" />
-            </div>
-            <Button>Change Password</Button>
+        <CardContent>
+            <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                    <FormField control={passwordForm.control} name="currentPassword" render={({field}) => (
+                        <FormItem>
+                            <FormLabel>Current Password</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={passwordForm.control} name="newPassword" render={({field}) => (
+                        <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={passwordForm.control} name="confirmPassword" render={({field}) => (
+                        <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <Button type="submit" disabled={isPasswordPending}>
+                        {isPasswordPending ? 'Changing...' : 'Change Password'}
+                    </Button>
+                </form>
+            </Form>
         </CardContent>
       </Card>
       

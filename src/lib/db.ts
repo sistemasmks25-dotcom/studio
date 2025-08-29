@@ -30,6 +30,7 @@ async function setup() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
         role TEXT NOT NULL,
         departmentId TEXT,
         lastLogin TEXT NOT NULL,
@@ -60,9 +61,9 @@ async function setup() {
 
   const users = await db.get('SELECT COUNT(*) as count FROM users');
   if (users.count === 0) {
-    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'Admin', '3', '2024-07-30T10:00:00Z', 'Active');
-    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'User', '1', '2024-07-30T12:30:00Z', 'Active');
-    await db.run("INSERT INTO users (id, name, email, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'User', '2', '2024-07-29T15:00:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, password, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", '1', 'Admin User', 'admin@fortress.com', 'password', 'Admin', '3', '2024-07-30T10:00:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, password, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", '2', 'Dev One', 'dev1@fortress.com', 'password', 'User', '1', '2024-07-30T12:30:00Z', 'Active');
+    await db.run("INSERT INTO users (id, name, email, password, role, departmentId, lastLogin, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", '3', 'Marketing Guru', 'mktg1@fortress.com', 'password', 'User', '2', '2024-07-29T15:00:00Z', 'Active');
   }
   
   const passwords = await db.get('SELECT COUNT(*) as count FROM passwords');

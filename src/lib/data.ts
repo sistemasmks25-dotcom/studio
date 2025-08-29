@@ -13,6 +13,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string; // Should be handled securely
   role: 'Admin' | 'User';
   department: string; // The name of the department
   departmentId: string;
@@ -24,4 +25,9 @@ export interface Department {
   id: string;
   name: string;
   memberCount: number;
+}
+
+export interface PasswordChange {
+  currentPassword?: string;
+  newPassword?: string;
 }
