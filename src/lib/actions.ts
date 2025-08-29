@@ -72,6 +72,12 @@ export async function getUsers(): Promise<User[]> {
   return db.all("SELECT u.*, d.name as department FROM users u JOIN departments d ON u.departmentId = d.id ORDER BY u.name");
 }
 
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const db = await dbPromise;
+  const user = await db.get<User>('SELECT * FROM users WHERE email = ?', email);
+  return user || null;
+}
+
 export async function saveUser(
   user: Omit<User, 'id' | 'lastLogin' | 'status' | 'department'> & { id?: string }
 ) {
@@ -100,6 +106,18 @@ export async function saveUser(
         return { error: 'Failed to save user.' };
     }
 }
+
+export async function updateUserProfile(id: string, name: string) {
+    const db = await dbPromise;
+    try {
+        await db.run('UPDATE users SET name = ? WHERE id = ?', name, id);
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return { error: 'Failed to update profile.' };
+    }
+}
+
 
 export async function deactivateUser(id: string) {
     const db = await dbPromise;
